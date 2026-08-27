@@ -1,0 +1,29 @@
+# Local research and generator test artifacts
+tmp/
+work/
+__pycache__/
+*.py[cod]
+.venv/
+
+# Large or restartable GROMACS binary outputs
+*.xtc
+*.trr
+*.edr
+*.tpr
+*.cpt
+
+# Generated full-system structures (single-molecule templates remain tracked)
+initial_box_*.pdb
+initial_box_*.gro
+em_*.gro
+prep_*.gro
+npt_eq_*.gro
+prod_*.gro
+
+# Runtime logs and automatic backup files
+*.log
+mdout_*.mdp
+step*.pdb
+\#*\#
+*.bak
+

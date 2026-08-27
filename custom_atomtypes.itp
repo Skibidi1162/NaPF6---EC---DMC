@@ -1,0 +1,15 @@
+; Custom nonbonded atom types
+; name    bond_type  atomic_number  mass       charge  ptype  sigma      epsilon
+
+[ atomtypes ]
+PF6_P     PF6_P      15             30.973762  0.0000  A      0.37400    0.83680
+PF6_F     PF6_F       9             18.998403  0.0000  A      0.31181    0.25520
+
+; DMC atom types from modified OPLS-AA model
+; Hydrogen LJ parameters replaced by GAFF values
+
+DMC_CM    DMC_CM     6   12.0110   0.0000   A   0.3500   0.276144
+DMC_OE    DMC_OE     8   15.9990   0.0000   A   0.2900   0.585760
+DMC_CC    DMC_CC     6   12.0110   0.0000   A   0.3550   0.292880
+DMC_OC    DMC_OC     8   15.9990   0.0000   A   0.2960   0.878640
+DMC_H     DMC_H      1    1.0080   0.0000   A   0.2471   0.065693

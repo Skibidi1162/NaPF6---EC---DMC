@@ -1,0 +1,41 @@
+; Hexafluorophosphate anion
+; Canongia Lopes/Padua OPLS-AA-derived model
+
+[ moleculetype ]
+; name    nrexcl
+PF6_M     3
+
+[ atoms ]
+; nr  type   resnr  residue  atom  cgnr  charge  mass
+1     PF6_P  1      PF6      P     1      1.34    30.973762
+2     PF6_F  1      PF6      F1    1     -0.39    18.998403
+3     PF6_F  1      PF6      F2    1     -0.39    18.998403
+4     PF6_F  1      PF6      F3    1     -0.39    18.998403
+5     PF6_F  1      PF6      F4    1     -0.39    18.998403
+6     PF6_F  1      PF6      F5    1     -0.39    18.998403
+7     PF6_F  1      PF6      F6    1     -0.39    18.998403
+
+[ bonds ]
+; ai  aj  funct  length   force constant
+1     2   1      0.1606   310000
+1     3   1      0.1606   310000
+1     4   1      0.1606   310000
+1     5   1      0.1606   310000
+1     6   1      0.1606   310000
+1     7   1      0.1606   310000
+
+[ angles ]
+; Twelve adjacent F-P-F angles; opposite pairs are 180 degrees
+; ai  aj  ak  funct  angle  force constant
+2     1   4   1      90.0   1165
+2     1   5   1      90.0   1165
+2     1   6   1      90.0   1165
+2     1   7   1      90.0   1165
+3     1   4   1      90.0   1165
+3     1   5   1      90.0   1165
+3     1   6   1      90.0   1165
+3     1   7   1      90.0   1165
+4     1   6   1      90.0   1165
+4     1   7   1      90.0   1165
+5     1   6   1      90.0   1165
+5     1   7   1      90.0   1165

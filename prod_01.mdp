@@ -1,0 +1,73 @@
+; 0.5 ns NPT production simulation
+; Continued from the completed 1 ns NPT equilibration
+
+integrator              = md
+dt                      = 0.00025
+nsteps                  = 2000000
+continuation            = yes
+
+; Multiple-time-step integration
+; Bonded forces: every 0.25 fs
+; Nonbonded forces: every 2 fs
+mts                     = yes
+mts-levels              = 2
+mts-level2-factor       = 8
+mts-level2-forces       = nonbonded longrange-nonbonded
+
+; Output
+; Energy and coordinates saved every 1 ps
+nstxout                  = 0
+nstvout                  = 0
+nstfout                  = 0
+nstcalcenergy           = 40
+nstenergy               = 4000
+nstlog                  = 4000
+nstxout-compressed      = 4000
+compressed-x-precision  = 1000
+compressed-x-grps       = System
+
+; Neighbor searching
+cutoff-scheme           = Verlet
+nstlist                 = 40
+verlet-buffer-tolerance = 0.002
+rlist                   = 1.2
+
+; Electrostatics
+coulombtype             = PME
+rcoulomb                = 1.2
+fourierspacing          = 0.12
+pme_order               = 4
+
+; van der Waals interactions
+vdwtype                 = Cut-off
+rvdw                    = 1.2
+DispCorr                = EnerPres
+
+; Temperature coupling: paper protocol
+tcoupl                  = Berendsen
+tc-grps                 = System
+tau_t                   = 5.0
+ref_t                   = 298.15
+nsttcouple              = 8
+
+; Pressure coupling: paper protocol
+pcoupl                  = Berendsen
+pcoupltype              = isotropic
+tau_p                   = 91.2
+ref_p                   = 1.01325
+compressibility         = 4.5e-5
+nstpcouple              = 8
+
+; Flexible molecular models
+constraints             = none
+
+; Periodic boundary conditions
+pbc                     = xyz
+
+; Continue existing velocities
+gen_vel                 = no
+
+; Remove center-of-mass translation
+comm-mode               = Linear
+comm-grps               = System
+nstcomm                 = 800

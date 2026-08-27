@@ -1,0 +1,54 @@
+; 10 ps temperature preparation at 298.15 K
+
+integrator              = md
+dt                      = 0.00025
+nsteps                  = 40000
+continuation            = no
+
+; Output
+nstxout                  = 0
+nstvout                  = 0
+nstfout                  = 0
+nstenergy                = 200
+nstlog                   = 200
+nstxout-compressed       = 400
+compressed-x-grps        = System
+
+; Neighbor searching
+cutoff-scheme           = Verlet
+nstlist                 = 20
+rlist                   = 1.2
+
+; Electrostatics
+coulombtype             = PME
+rcoulomb                = 1.2
+fourierspacing          = 0.12
+pme_order               = 4
+
+; van der Waals
+vdwtype                 = Cut-off
+rvdw                    = 1.2
+DispCorr                = EnerPres
+
+; Temperature coupling from the paper
+tcoupl                  = Berendsen
+tc-grps                 = System
+tau_t                   = 5.0
+ref_t                   = 298.15
+
+; No pressure coupling during initial thermal preparation
+pcoupl                  = no
+
+; Molecular dynamics
+constraints             = none
+pbc                     = xyz
+
+; Generate reproducible initial velocities
+gen_vel                 = yes
+gen_temp                = 298.15
+gen_seed                = 4301
+
+comm-mode               = Linear
+nstcomm                 = 100
+
+verlet-buffer-tolerance = 0.002

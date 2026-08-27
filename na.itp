@@ -1,0 +1,9 @@
+; Sodium cation using the standard OPLS-AA Na+ atom type
+
+[ moleculetype ]
+; name    nrexcl
+NA_M      1
+
+[ atoms ]
+; nr  type      resnr  residue  atom  cgnr  charge   mass
+1     opls_407  1      NA       NA    1     1.0000   22.98977
