@@ -172,6 +172,9 @@ The generated case is located at:
 cases/paper_wEC_30_C_1.5M/
 ```
 
+This location is anchored beside `electrolyte_generator_v2.py`; it does not
+change when the generator is launched from a different terminal directory.
+
 ### Other supported input modes
 
 Generate counts for a target composition, concentration, and density:
@@ -260,6 +263,11 @@ The code creates:
 - `run_workflow_<case-label>.sh`, which runs one simulation stage at a time and
   can also create the standard RDF/coordination outputs.
 
+The workflow script changes into its own case directory before running any
+command. Therefore Packmol, GROMACS, log, trajectory, checkpoint, and RDF files
+remain in that case folder even if the script is invoked from the project root
+or by its absolute path.
+
 Packmol/PDB coordinates use **angstrom**, while GROMACS coordinates use
 **nanometres**. The workflow script performs the conversion when it writes
 `initial_box_<case-label>.gro`.
@@ -301,7 +309,8 @@ integer rounding.
 6. It copies the validated PDB, ITP, and MDP templates into the new case
    directory. It does not generate ITP parameters from the molecules.
 7. It generates `run_workflow_<case-label>.sh` to run each Packmol/GROMACS and
-   standard RDF-analysis stage.
+   standard RDF-analysis stage. The script automatically works inside its own
+   case directory, keeping outputs separated from every other case.
 8. It records the case information in `README_<case-label>.md`,
    `generation_summary_<case-label>.txt`, and `manifest_<case-label>.json`.
 

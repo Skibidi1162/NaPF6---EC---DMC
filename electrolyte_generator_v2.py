@@ -308,8 +308,14 @@ def workflow_script(case: Case, label: str) -> str:
     return f"""#!/usr/bin/env bash
 set -euo pipefail
 
+# Always run inside this case directory, even when the script is invoked from
+# the project root or another working directory. This keeps every generated
+# Packmol, GROMACS, log, trajectory, and analysis file with its own case.
+CASE_DIR="$(cd -- "$(dirname -- "${{BASH_SOURCE[0]}}")" && pwd)"
+cd "$CASE_DIR"
+
 if [ "$#" -ne 1 ]; then
-    echo "Usage: ./{names['workflow']} packmol|em|prep|npt|prod|analysis"
+    echo "Usage: $0 packmol|em|prep|npt|prod|analysis"
     exit 2
 fi
 
@@ -432,6 +438,9 @@ Density is used only for the initial box. Recalculate simulated density and
 concentration after NPT equilibration.
 
 ## Run one stage at a time in WSL
+
+The workflow automatically runs inside this case directory, so its outputs
+cannot accidentally be written into the project root or another case.
 
 ```bash
 ./{names['workflow']} packmol
@@ -559,10 +568,13 @@ def main() -> None:
     args = parse_args()
     try:
         case = resolve_case(args)
-        source = (args.template_dir or Path(__file__).resolve().parent).resolve()
+        project_dir = Path(__file__).resolve().parent
+        source = (args.template_dir or project_dir).resolve()
         files = load_templates(source)
         label = safe_label(args.case_label) if args.case_label else default_label(case)
-        destination = args.output_dir or Path("cases") / label
+        # Keep the default independent of the shell's current directory. An
+        # explicitly supplied output directory remains under the user's control.
+        destination = args.output_dir or project_dir / "cases" / label
         written = write_case(case, files, destination, args.force, label)
     except (ValueError, RuntimeError, FileNotFoundError, FileExistsError) as exc:
         raise SystemExit(f"Error: {exc}") from exc
