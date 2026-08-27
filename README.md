@@ -273,6 +273,19 @@ Each case also contains:
 These files preserve both the requested values and the realized values after
 integer rounding.
 
+### 5.5 Summary
+1. The Python generator reads the requested composition.
+- In target mode, it calculates EC, DMC, and NaPF₆ counts; EC + DMC defaults to 250.
+- In exact mode, it uses the molecule counts supplied by the user.
+- In paper mode, it uses predefined counts from the paper.
+2. It calculates the initial box size from the total molecular mass and input density.
+3. It validates the existing PDB molecular structures and matching ITP force-field files.
+4. It creates packmol.inp, which tells Packmol how many copies of each molecule to pack and the box dimensions. Packmol later performs the actual packing.
+5. It creates system.top, which tells GROMACS which molecular topology files to use and how many molecules are present.
+6. It copies the validated PDB, ITP, and MDP templates into the new case directory. It does not generate ITP parameters from the molecules.
+7. It generates run_workflow.sh to run each Packmol/GROMACS stage.
+8.It records the case information in README.md, generation_summary.txt, and manifest.json.
+
 ## 6. Inspect the generated case before running it
 
 Enter the case directory and list its contents:
