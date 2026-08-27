@@ -58,7 +58,8 @@ command -v packmol
 
 It must return the location of a runnable `packmol` command. Installing Packmol
 through Julia is acceptable, but the command still needs to be available in
-the WSL `PATH` because `run_workflow.sh` calls `packmol` directly.
+the WSL `PATH` because the generated `run_workflow_<case-label>.sh` script calls
+`packmol` directly.
 
 To open the current WSL directory in VS Code:
 
@@ -251,40 +252,58 @@ from the one-molecule PDB templates.
 
 The code creates:
 
-- `packmol.inp`, containing the molecule counts and initial cubic box in
-  angstrom;
-- `system.top`, containing the topology include order and matching molecule
-  counts;
+- `packmol_<case-label>.inp`, containing the molecule counts and initial cubic
+  box in angstrom;
+- `system_<case-label>.top`, containing the topology include order and matching
+  molecule counts;
 - copies of all validated PDB, ITP, and MDP files; and
-- `run_workflow.sh`, which runs one simulation stage at a time.
+- `run_workflow_<case-label>.sh`, which runs one simulation stage at a time and
+  can also create the standard RDF/coordination outputs.
 
 Packmol/PDB coordinates use **angstrom**, while GROMACS coordinates use
 **nanometres**. The workflow script performs the conversion when it writes
-`initial_box.gro`.
+`initial_box_<case-label>.gro`.
 
 ### 5.4 Record reproducibility information
 
 Each case also contains:
 
-- `generation_summary.txt`, a human-readable input/output summary;
-- `manifest.json`, the same information in a machine-readable form; and
-- a case-specific `README.md`.
+- `generation_summary_<case-label>.txt`, a human-readable input/output summary;
+- `manifest_<case-label>.json`, the same information in a machine-readable
+  form; and
+- `README_<case-label>.md`, containing case-specific instructions.
+
+All results that depend on composition include the case label. Reusable
+molecular and simulation templates retain their ordinary names, such as
+`dmc.itp`, `ec.pdb`, and `npt_eq.mdp`.
 
 These files preserve both the requested values and the realized values after
 integer rounding.
 
 ### 5.5 Summary
+
 1. The Python generator reads the requested composition.
-- In target mode, it calculates EC, DMC, and NaPF₆ counts; EC + DMC defaults to 250.
-- In exact mode, it uses the molecule counts supplied by the user.
-- In paper mode, it uses predefined counts from the paper.
-2. It calculates the initial box size from the total molecular mass and input density.
-3. It validates the existing PDB molecular structures and matching ITP force-field files.
-4. It creates packmol.inp, which tells Packmol how many copies of each molecule to pack and the box dimensions. Packmol later performs the actual packing.
-5. It creates system.top, which tells GROMACS which molecular topology files to use and how many molecules are present.
-6. It copies the validated PDB, ITP, and MDP templates into the new case directory. It does not generate ITP parameters from the molecules.
-7. It generates run_workflow.sh to run each Packmol/GROMACS stage.
-8.It records the case information in README.md, generation_summary.txt, and manifest.json.
+
+   - In target mode, it calculates EC, DMC, and NaPF6 counts; EC + DMC defaults
+     to 250.
+   - In exact mode, it uses the molecule counts supplied by the user.
+   - In paper mode, it uses predefined counts from the paper.
+
+2. It calculates the initial box size from the total molecular mass and input
+   density.
+3. It validates the existing PDB molecular structures and matching ITP
+   force-field files.
+4. It creates `packmol_<case-label>.inp`, which tells Packmol how many copies of
+   each molecule to pack and the box dimensions. Packmol later performs the
+   actual packing.
+5. It creates `system_<case-label>.top`, which tells GROMACS which molecular
+   topology files to use and how many molecules are present.
+6. It copies the validated PDB, ITP, and MDP templates into the new case
+   directory. It does not generate ITP parameters from the molecules.
+7. It generates `run_workflow_<case-label>.sh` to run each Packmol/GROMACS and
+   standard RDF-analysis stage.
+8. It records the case information in `README_<case-label>.md`,
+   `generation_summary_<case-label>.txt`, and `manifest_<case-label>.json`.
 
 ## 6. Inspect the generated case before running it
 
@@ -299,7 +318,7 @@ ls -1
 Check the GROMACS molecule counts:
 
 ```bash
-grep -A6 '\[ molecules \]' system.top
+grep -A6 '\[ molecules \]' system_paper_wEC_30_C_1.5M.top
 ```
 
 Expected counts:
@@ -314,11 +333,12 @@ DMC_M         173
 Check the Packmol structures, counts, and box:
 
 ```bash
-grep -E 'structure|number|inside box' packmol.inp
+grep -E 'structure|number|inside box' packmol_paper_wEC_30_C_1.5M.inp
 ```
 
-The four molecule counts must match `system.top`, and each maximum box
-coordinate should be approximately `32.43700` angstrom.
+The four molecule counts must match
+`system_paper_wEC_30_C_1.5M.top`, and each maximum box coordinate should be
+approximately `32.43700` angstrom.
 
 ## 7. Run Packmol
 
@@ -326,26 +346,28 @@ Make the workflow script executable if necessary, then run only the Packmol
 stage:
 
 ```bash
-chmod +x run_workflow.sh
-./run_workflow.sh packmol
+chmod +x run_workflow_paper_wEC_30_C_1.5M.sh
+./run_workflow_paper_wEC_30_C_1.5M.sh packmol
 ```
 
 This stage:
 
-1. runs `packmol < packmol.inp`;
-2. saves Packmol output in `packmol.log`;
-3. verifies that `initial_box.pdb` contains exactly 3076 atoms; and
-4. creates `initial_box.gro` with a 3.24370009 nm cubic GROMACS box.
+1. runs Packmol with `packmol_paper_wEC_30_C_1.5M.inp`;
+2. saves Packmol output in `packmol_paper_wEC_30_C_1.5M.log`;
+3. verifies that `initial_box_paper_wEC_30_C_1.5M.pdb` contains exactly 3076
+   atoms; and
+4. creates `initial_box_paper_wEC_30_C_1.5M.gro` with a 3.24370009 nm cubic
+   GROMACS box.
 
 Verify the outputs:
 
 ```bash
-grep -cE '^(ATOM|HETATM)' initial_box.pdb
-head -n 2 initial_box.gro
-tail -n 1 initial_box.gro
+grep -cE '^(ATOM|HETATM)' initial_box_paper_wEC_30_C_1.5M.pdb
+head -n 2 initial_box_paper_wEC_30_C_1.5M.gro
+tail -n 1 initial_box_paper_wEC_30_C_1.5M.gro
 ```
 
-For this case, the first command and the second line of `initial_box.gro`
+For this case, the first command and the second line of the GRO file
 should both report `3076`. The final line should contain three box lengths near
 `3.24370009` nm.
 
@@ -357,16 +379,17 @@ the liquid or establish the final simulated density.
 Run:
 
 ```bash
-./run_workflow.sh em
+./run_workflow_paper_wEC_30_C_1.5M.sh em
 ```
 
-This creates `em.tpr`, then runs steepest-descent minimization and writes files
-with the prefix `em`, including `em.gro`, `em.edr`, and `em.log`.
+This creates `em_paper_wEC_30_C_1.5M.tpr`, then runs steepest-descent
+minimization and writes files with the case-labeled `em_paper_wEC_30_C_1.5M`
+prefix.
 
 Check the end of the log:
 
 ```bash
-tail -n 30 em.log
+tail -n 30 em_paper_wEC_30_C_1.5M.log
 ```
 
 The important outcome is successful convergence without a fatal error. In the
@@ -379,12 +402,12 @@ uses a random initial arrangement.
 Run:
 
 ```bash
-./run_workflow.sh prep
+./run_workflow_paper_wEC_30_C_1.5M.sh prep
 ```
 
-This stage starts from `em.gro`, generates velocities at 298.15 K, and performs
-the 10 ps preparation run. It should create `prep.gro` and `prep.cpt` for the
-next stage.
+This stage starts from the labeled minimized structure, generates velocities at
+298.15 K, and performs the 10 ps preparation run. It creates labeled `prep`
+structure and checkpoint files for the next stage.
 
 The MDP intentionally follows the translated test protocol. GROMACS warns that
 the Berendsen thermostat does not generate the correct canonical kinetic-energy
@@ -394,7 +417,7 @@ not add a larger `-maxwarn` value to hide a new or unexplained warning.
 Check completion:
 
 ```bash
-tail -n 20 prep.log
+tail -n 20 prep_paper_wEC_30_C_1.5M.log
 ```
 
 ## 10. One-nanosecond NPT equilibration
@@ -402,13 +425,13 @@ tail -n 20 prep.log
 Run:
 
 ```bash
-./run_workflow.sh npt
+./run_workflow_paper_wEC_30_C_1.5M.sh npt
 ```
 
-This stage continues from both `prep.gro` and `prep.cpt` and allows the box
-volume and density to relax at 298.15 K and 1 bar. The script uses eight CPU
-threads and a lower scheduling priority (`nice -n 10`) to reduce interference
-with normal PC use.
+This stage continues from the labeled preparation structure and checkpoint and
+allows the box volume and density to relax at 298.15 K and 1 bar. The script
+uses eight CPU threads and a lower scheduling priority (`nice -n 10`) to reduce
+interference with normal PC use.
 
 The GROMACS translation uses multiple time stepping: a 0.25 fs base step and a
 factor of 8 for the slower forces, equivalent to a 2 fs outer step. Settings
@@ -417,14 +440,17 @@ such as `nstcalcenergy` must be multiples of 8 when this MTS factor is used.
 Check completion:
 
 ```bash
-tail -n 20 npt_eq.log
+tail -n 20 npt_eq_paper_wEC_30_C_1.5M.log
 ```
 
 Extract temperature, pressure, volume, and density from the equilibrated part
 of the trajectory. For example, to analyze the final 500 ps of a 1 ns run:
 
 ```bash
-gmx energy -f npt_eq.edr -b 500 -o npt_equilibrated_properties.xvg
+gmx energy \
+    -f npt_eq_paper_wEC_30_C_1.5M.edr \
+    -b 500 \
+    -o npt_equilibrated_properties_paper_wEC_30_C_1.5M.xvg
 ```
 
 At the interactive prompt, select:
@@ -459,16 +485,17 @@ input value remained fixed.
 Run:
 
 ```bash
-./run_workflow.sh prod
+./run_workflow_paper_wEC_30_C_1.5M.sh prod
 ```
 
-This continues from `npt_eq.gro` and `npt_eq.cpt` and writes files with the
-prefix `prod_01`, including the trajectory `prod_01.xtc`.
+This continues from the labeled NPT structure and checkpoint and writes files
+with the prefix `prod_01_paper_wEC_30_C_1.5M`, including the production
+trajectory.
 
 Check completion and performance:
 
 ```bash
-tail -n 30 prod_01.log
+tail -n 30 prod_01_paper_wEC_30_C_1.5M.log
 ```
 
 The 0.5 ns trajectory is intended for a preliminary structural result such as
@@ -481,29 +508,22 @@ In the validated topology, the EC carbonyl oxygen is named `O00` and the DMC
 carbonyl oxygen is named `O03`. Calculate their RDFs and running coordination
 numbers separately.
 
-EC:
+Run the automated analysis stage:
 
 ```bash
-gmx rdf \
-    -f prod_01.xtc \
-    -s prod_01.tpr \
-    -ref 'resname NA and name NA' \
-    -sel 'resname EC and name O00' \
-    -o rdf_Na_ECcarbonylO.xvg \
-    -cn coordination_Na_ECcarbonylO.xvg
+./run_workflow_paper_wEC_30_C_1.5M.sh analysis
 ```
 
-DMC:
+It reads `prod_01_paper_wEC_30_C_1.5M.xtc` and creates:
 
-```bash
-gmx rdf \
-    -f prod_01.xtc \
-    -s prod_01.tpr \
-    -ref 'resname NA and name NA' \
-    -sel 'resname DMC and name O03' \
-    -o rdf_Na_DMCcarbonylO.xvg \
-    -cn coordination_Na_DMCcarbonylO.xvg
-```
+- `rdf_Na_ECcarbonylO_paper_wEC_30_C_1.5M.xvg`
+- `coordination_Na_ECcarbonylO_paper_wEC_30_C_1.5M.xvg`
+- `rdf_Na_DMCcarbonylO_paper_wEC_30_C_1.5M.xvg`
+- `coordination_Na_DMCcarbonylO_paper_wEC_30_C_1.5M.xvg`
+
+The script uses Na as the reference, EC atom `O00` for the EC selection, and
+DMC atom `O03` for the DMC selection. Keeping the case label in every analysis
+filename prevents Xmgrace from accidentally opening data from another case.
 
 The RDF, `g(r)`, measures how strongly a selected atom is distributed around
 Na+ relative to the bulk. The `-cn` output is the **running/cumulative
@@ -530,19 +550,13 @@ sudo apt install grace
 Open an RDF:
 
 ```bash
-xmgrace rdf_Na_ECcarbonylO.xvg
+xmgrace rdf_Na_ECcarbonylO_paper_wEC_30_C_1.5M.xvg
 ```
 
 Open a running coordination-number file:
 
 ```bash
-xmgrace coordination_Na_ECcarbonylO.xvg
-```
-
-If an XVG file contains more than one y-data column, use `-nxy`:
-
-```bash
-xmgrace -nxy rdf_Na_carbonylO.xvg
+xmgrace coordination_Na_ECcarbonylO_paper_wEC_30_C_1.5M.xvg
 ```
 
 Useful labels are:
@@ -557,7 +571,7 @@ To save an editable Grace project, use **File -> Save As**. In the save dialog,
 enter the complete filename in the bottom **Selection** field, for example:
 
 ```text
-/home/nguyen/projects/napf6-ec-dmc/cases/paper_wEC_30_C_1.5M/rdf_Na_ECcarbonylO.agr
+/home/nguyen/projects/napf6-ec-dmc/cases/paper_wEC_30_C_1.5M/rdf_Na_ECcarbonylO_paper_wEC_30_C_1.5M.agr
 ```
 
 The top **Filter** field is a filename filter, not the save destination. Putting
@@ -568,8 +582,8 @@ Export the saved Grace project to PNG from the terminal:
 ```bash
 gracebat \
     -hdevice PNG \
-    -printfile rdf_Na_ECcarbonylO.png \
-    rdf_Na_ECcarbonylO.agr
+    -printfile rdf_Na_ECcarbonylO_paper_wEC_30_C_1.5M.png \
+    rdf_Na_ECcarbonylO_paper_wEC_30_C_1.5M.agr
 ```
 
 ## 14. Files to preserve for reproducibility
@@ -577,11 +591,11 @@ gracebat \
 For every reported system, preserve at least:
 
 - generator version or Git commit;
-- generator command and `generation_summary.txt`;
-- `manifest.json`;
+- generator command and `generation_summary_<case-label>.txt`;
+- `manifest_<case-label>.json`;
 - PDB, ITP, TOP, and MDP inputs;
-- `packmol.inp` and `packmol.log`;
-- `run_workflow.sh`;
+- the case-labeled Packmol input and log;
+- `run_workflow_<case-label>.sh`;
 - GROMACS `.log` files;
 - final structures/checkpoints needed to continue the run;
 - analysis commands, `.xvg` data, and exported figures; and
@@ -654,22 +668,22 @@ Packmol is not available to Bash. Check:
 command -v packmol
 ```
 
-Fix the Julia Packmol wrapper or WSL `PATH` before continuing. Do not run
-`packmol.inp` by double-clicking it; enter the generated case directory and run
-`./run_workflow.sh packmol`.
+Fix the Julia Packmol wrapper or WSL `PATH` before continuing. Do not run the
+Packmol input by double-clicking it; enter the generated case directory and run
+the case-labeled workflow script with the `packmol` stage.
 
 ### Packmol reports an input or structure error
 
 Confirm that the terminal is in the generated case directory and that
 `na.pdb`, `pf6.pdb`, `ec.pdb`, and `dmc.pdb` are present. Packmol paths inside
-`packmol.inp` are relative to the current directory.
+the case-labeled Packmol input are relative to the current directory.
 
 ### GROMACS reports `No such file or directory` for an ITP
 
 Run GROMACS from inside the generated case directory. Confirm that every
-included file named near the top of `system.top` exists there. The standard
-GROMACS `oplsaa.ff` directory is supplied by the GROMACS installation; the
-other ITP files are supplied by this project.
+included file named near the top of `system_<case-label>.top` exists there. The
+standard GROMACS `oplsaa.ff` directory is supplied by the GROMACS installation;
+the other ITP files are supplied by this project.
 
 ### GROMACS stops because of warnings
 
