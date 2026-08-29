@@ -406,17 +406,22 @@ prod)
     nice -n 10 gmx mdrun -deffnm "$PROD" -v -ntmpi 1 -ntomp 8
     ;;
 analysis)
+    OUTPUT_DIR="output_${CASE_LABEL}"
+    mkdir -p "$OUTPUT_DIR"
+
     [ -f "$PROD.xtc" ] && [ -f "$PROD.tpr" ]
-    gmx rdf -f "$PROD.xtc" -s "$PROD.tpr" \\
-        -ref 'resname NA and name NA' \\
-        -sel 'resname EC and name O00' \\
-        -o "rdf_Na_ECcarbonylO_${{CASE_LABEL}}.xvg" \\
-        -cn "coordination_Na_ECcarbonylO_${{CASE_LABEL}}.xvg"
-    gmx rdf -f "$PROD.xtc" -s "$PROD.tpr" \\
-        -ref 'resname NA and name NA' \\
-        -sel 'resname DMC and name O03' \\
-        -o "rdf_Na_DMCcarbonylO_${{CASE_LABEL}}.xvg" \\
-        -cn "coordination_Na_DMCcarbonylO_${{CASE_LABEL}}.xvg"
+
+    gmx rdf -f "$PROD.xtc" -s "$PROD.tpr" \
+        -ref 'resname NA and name NA' \
+        -sel 'resname EC and name O00' \
+        -o "$OUTPUT_DIR/rdf_Na_ECcarbonylO_${CASE_LABEL}.xvg" \
+        -cn "$OUTPUT_DIR/coordination_Na_ECcarbonylO_${CASE_LABEL}.xvg"
+
+    gmx rdf -f "$PROD.xtc" -s "$PROD.tpr" \
+        -ref 'resname NA and name NA' \
+        -sel 'resname DMC and name O03' \
+        -o "$OUTPUT_DIR/rdf_Na_DMCcarbonylO_${CASE_LABEL}.xvg" \
+        -cn "$OUTPUT_DIR/coordination_Na_DMCcarbonylO_${CASE_LABEL}.xvg"
     ;;
 compact-preview)
     echo "Reproducible intermediate files eligible for removal:"
