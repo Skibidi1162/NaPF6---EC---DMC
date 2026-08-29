@@ -11,15 +11,15 @@ mts-levels              = 2
 mts-level2-factor       = 8
 mts-level2-forces       = nonbonded longrange-nonbonded
 
-; Output every 1 ps
+; Save thermodynamic diagnostics but not a redundant equilibration trajectory.
+; The final GRO/CPT state is retained for production and reproducibility.
 nstxout                  = 0
 nstvout                  = 0
 nstfout                  = 0
 nstenergy                = 4000
 nstlog                   = 4000
-nstxout-compressed       = 4000
+nstxout-compressed       = 0
 nstcalcenergy           = 400
-compressed-x-grps        = System
 
 ; Neighbor searching
 cutoff-scheme           = Verlet

@@ -1,0 +1,2 @@
+# Optional dependency for plot_ion_pairing.py; analyzer itself uses stdlib only.
+matplotlib>=3.11,<4

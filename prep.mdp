@@ -11,8 +11,8 @@ nstvout                  = 0
 nstfout                  = 0
 nstenergy                = 200
 nstlog                   = 200
-nstxout-compressed       = 400
-compressed-x-grps        = System
+; The final GRO/CPT files are sufficient to start NPT. Avoid a redundant XTC.
+nstxout-compressed       = 0
 
 ; Neighbor searching
 cutoff-scheme           = Verlet

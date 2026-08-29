@@ -442,6 +442,11 @@ allows the box volume and density to relax at 298.15 K and 1 bar. The script
 uses eight CPU threads and a lower scheduling priority (`nice -n 10`) to reduce
 interference with normal PC use.
 
+The preparation and NPT stages retain their final GRO/CPT restart states and
+EDR/LOG diagnostics but do not write coordinate XTC trajectories by default.
+The XTC files are unnecessary for advancing the workflow and were the largest
+reproducible intermediate outputs in the original configuration.
+
 The GROMACS translation uses multiple time stepping: a 0.25 fs base step and a
 factor of 8 for the slower forces, equivalent to a 2 fs outer step. Settings
 such as `nstcalcenergy` must be multiples of 8 when this MTS factor is used.
@@ -547,6 +552,28 @@ contributions were approximately 1.53 and 2.38, respectively, for a total of
 about 3.91. These are short-trajectory observations to be tested for stability,
 not final reproduced values.
 
+### Compacting a completed case
+
+After production and analysis have been checked, preview reproducible
+intermediates that can be removed:
+
+```bash
+./run_workflow_paper_wEC_30_C_1.5M.sh compact-preview
+```
+
+Then compact the case:
+
+```bash
+./run_workflow_paper_wEC_30_C_1.5M.sh compact
+```
+
+Compaction requires a completed production TPR/XTC pair. It preserves all
+production outputs, all GROMACS energy and log diagnostics, the Packmol
+structure, and the final NPT GRO/CPT state needed to rebuild or restart
+production. It removes only named, reproducible preparation artifacts and
+GROMACS backup copies. New workflows set `GMX_MAXBACKUP=0`, so an accidental
+rerun fails instead of accumulating `#file.N#` backups or overwriting results.
+
 ## 13. Plot with Xmgrace
 
 Install Grace if needed:
@@ -607,7 +634,8 @@ For every reported system, preserve at least:
 - `run_workflow_<case-label>.sh`;
 - GROMACS `.log` files;
 - final structures/checkpoints needed to continue the run;
-- analysis commands, `.xvg` data, and exported figures; and
+- analysis commands, canonical `.csv` data, summaries, and exported figures;
+  retain raw `.xvg` files only when they are needed for debugging; and
 - GROMACS and Packmol versions.
 
 Large binary simulation outputs can exceed GitHub's practical limits. Do not
@@ -716,3 +744,100 @@ factor-of-ten conversion.
 - [Packmol user guide](https://m3g.github.io/packmol/userguide.shtml)
 - [GROMACS installation guide](https://manual.gromacs.org/documentation/current/install-guide/index.html)
 - [VS Code: Developing in WSL](https://code.visualstudio.com/docs/remote/wsl)
+
+## 18. Standalone Na-PF6 ion-pairing analysis
+
+`analyze_ion_pairing.py` extends a completed case without changing or
+regenerating it. It calculates Na-P and Na-F RDFs and running coordination
+numbers, then classifies every Na+ environment by the number of PF6-
+phosphorus atoms within a distance cutoff:
+
+- SIP/SSIP: zero P atoms;
+- CIP: one P atom;
+- AGG: two or more P atoms.
+
+The primary cutoff is 0.5 nm, following a published NaPF6 trajectory-analysis
+method. Results at 0.35, 0.4, 0.405, 0.45, and 0.6 nm and at the detected first
+Na-P RDF minimum are included as sensitivity checks. The 0.405 nm value is the
+reported first-shell distance for 1 M NaPF6 in EC:DMC (1:1), while 0.45 nm is a
+published composition-wide EC/DMC shell boundary. The scientific basis and its
+interpretation limits are documented in `ION_PAIRING_METHODS.md`.
+
+Run the command from the project root after the production TPR and XTC have
+been created:
+
+```bash
+python3 analyze_ion_pairing.py \
+    --case-label paper_wEC_30_C_1.5M
+```
+
+The script discovers the matching production files and writes only below:
+
+```text
+cases/paper_wEC_30_C_1.5M/analysis_ion_pairing/
+```
+
+Important outputs include:
+
+- `rdf_coordination_Na_P.csv` and `rdf_coordination_Na_F.csv`;
+- `ion_pairing_timeseries.csv`;
+- `ion_pairing_summary.csv` with block standard errors;
+- `pf6_neighbor_histogram.csv`;
+- `analysis_summary.txt`, `analysis_manifest.json`, and `commands.log`.
+
+Neighbor-count processing is streamed from disk, so RAM use no longer grows
+with the full number of trajectory frames times Na/cutoff columns. After all
+canonical outputs succeed, raw GROMACS XVG files and temporary NDX/selection
+files are removed by default. Use `--keep-intermediates` only when those raw
+files are needed for debugging; they can always be regenerated from the
+production TPR/XTC pair.
+
+To analyze only part of a trajectory or reduce the sampled frame count:
+
+```bash
+python3 analyze_ion_pairing.py \
+    --case-label paper_wEC_30_C_1.5M \
+    --begin-ps 100 \
+    --dt-ps 5
+```
+
+Use `--case-dir` for a case stored outside the default `cases/` directory.
+Use `--force` only when intentionally replacing the named outputs in an
+existing `analysis_ion_pairing/` folder. The command requires GROMACS but no
+additional Python packages.
+
+### Graphing the analysis
+
+`plot_ion_pairing.py` is a separate post-processing command. It reads the CSV
+files produced above and writes publication-ready figures back into the same
+analysis folder; it does not read or modify the trajectory.
+
+Install the plotting dependency once if needed:
+
+```bash
+python -m pip install -r requirements-analysis.txt
+```
+
+Then graph a completed analysis:
+
+```bash
+python3 plot_ion_pairing.py \
+    --case-label paper_wEC_30_C_1.5M
+```
+
+The default PNG outputs are:
+
+- `figure_Na_P_rdf_cn.png`;
+- `figure_Na_F_rdf_cn.png`;
+- `figure_ion_pairing_primary.png`;
+- `figure_ion_pairing_cutoff_sensitivity.png`;
+- `figure_ion_pairing_timeseries.png`.
+
+Use `--format svg` or `--format pdf` for vector figures, repeat `--format` to
+request multiple formats, and use `--force` only to replace existing graph
+files. If the analysis was written to a non-default folder, select it directly:
+
+```bash
+python3 plot_ion_pairing.py \
+    --analysis-dir cases/paper_wEC_30_C_1.5M/analysis_ion_pairing_run2
+```

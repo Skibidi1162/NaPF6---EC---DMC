@@ -308,6 +308,10 @@ def workflow_script(case: Case, label: str) -> str:
     return f"""#!/usr/bin/env bash
 set -euo pipefail
 
+# Refuse to overwrite a completed stage instead of accumulating GROMACS
+# #file.N# backups or silently replacing prior simulation results.
+export GMX_MAXBACKUP=0
+
 # Always run inside this case directory, even when the script is invoked from
 # the project root or another working directory. This keeps every generated
 # Packmol, GROMACS, log, trajectory, and analysis file with its own case.
@@ -315,7 +319,7 @@ CASE_DIR="$(cd -- "$(dirname -- "${{BASH_SOURCE[0]}}")" && pwd)"
 cd "$CASE_DIR"
 
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 packmol|em|prep|npt|prod|analysis"
+    echo "Usage: $0 packmol|em|prep|npt|prod|analysis|compact-preview|compact"
     exit 2
 fi
 
@@ -336,6 +340,33 @@ MDOUT_EM="{names['mdout_em']}"
 MDOUT_PREP="{names['mdout_prep']}"
 MDOUT_NPT="{names['mdout_npt']}"
 MDOUT_PROD="{names['mdout_prod']}"
+
+# Files below are reproducible intermediates. Compact mode is intentionally
+# explicit and preserves the production TPR/XTC/EDR/LOG/CPT/GRO plus the final
+# NPT GRO/CPT needed to rebuild or restart production.
+COMPACT_FILES=(
+    "$EM.tpr" "$EM.trr" "$EM.gro" "$EM.cpt"
+    "${{EM}}_prev.cpt" "$MDOUT_EM"
+    "$PREP.tpr" "$PREP.trr" "$PREP.xtc"
+    "$PREP.gro" "$PREP.cpt" "${{PREP}}_prev.cpt" "$MDOUT_PREP"
+    "$NPT.tpr" "$NPT.trr" "$NPT.xtc"
+    "${{NPT}}_prev.cpt" "$MDOUT_NPT"
+    "$PROD.trr" "${{PROD}}_prev.cpt" "$MDOUT_PROD"
+)
+
+show_compact_targets() {{
+    found=0
+    for path in "${{COMPACT_FILES[@]}}"; do
+        if [ -f "$path" ]; then
+            du -h -- "$path"
+            found=1
+        fi
+    done
+    find "$CASE_DIR" -maxdepth 1 -type f -name '#*#' -print
+    if [ "$found" -eq 0 ]; then
+        echo "No reproducible intermediate files are present."
+    fi
+}}
 
 case "$stage" in
 packmol)
@@ -386,6 +417,21 @@ analysis)
         -sel 'resname DMC and name O03' \\
         -o "rdf_Na_DMCcarbonylO_${{CASE_LABEL}}.xvg" \\
         -cn "coordination_Na_DMCcarbonylO_${{CASE_LABEL}}.xvg"
+    ;;
+compact-preview)
+    echo "Reproducible intermediate files eligible for removal:"
+    show_compact_targets
+    ;;
+compact)
+    [ -f "$PROD.tpr" ] && [ -f "$PROD.xtc" ] || {{
+        echo "Compact mode requires a completed production TPR/XTC pair." >&2
+        exit 1
+    }}
+    echo "Removing reproducible intermediate files:"
+    show_compact_targets
+    rm -f -- "${{COMPACT_FILES[@]}}"
+    find "$CASE_DIR" -maxdepth 1 -type f -name '#*#' -delete
+    echo "Compaction complete. Production and restart outputs were preserved."
     ;;
 *)
     echo "Unknown stage: $stage"
@@ -449,6 +495,8 @@ cannot accidentally be written into the project root or another case.
 ./{names['workflow']} npt
 ./{names['workflow']} prod
 ./{names['workflow']} analysis
+./{names['workflow']} compact-preview
+./{names['workflow']} compact
 ```
 
 Inspect every stage before continuing. Packmol/PDB uses angstrom; GROMACS uses
@@ -456,6 +504,12 @@ nm. The 0.5 ns production stage is a workflow demonstration and preliminary
 structural test, not converged transport-property sampling. Case-dependent
 results contain `{label}` in their filenames; reusable PDB, ITP and MDP
 templates retain their standard names.
+
+The MDP defaults do not write EM, preparation, or NPT coordinate trajectories;
+their final GRO/CPT states and energy logs are sufficient for stage validation.
+After production and analysis have been checked, `compact-preview` lists only
+reproducible intermediates and `compact` removes them. Production TPR, XTC,
+EDR, LOG, CPT and GRO files, plus the final NPT GRO/CPT restart state, are kept.
 """
 
 

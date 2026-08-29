@@ -4,6 +4,8 @@ work/
 __pycache__/
 *.py[cod]
 .venv/
+cases/
+*.zip
 
 # Large or restartable GROMACS binary outputs
 *.xtc
@@ -26,4 +28,7 @@ mdout_*.mdp
 step*.pdb
 \#*\#
 *.bak
-
+*.xvg
+figure_*.png
+figure_*.svg
+figure_*.pdf
